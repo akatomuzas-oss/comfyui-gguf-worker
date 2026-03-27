@@ -5,18 +5,17 @@
 
 set +e  # Don't exit on error
 
+# Download to network volume if available, otherwise to local ComfyUI dirs
 VOLUME="/runpod-volume"
-MODELS_DIR="$VOLUME/models"
+if [ -d "$VOLUME" ]; then
+    MODELS_DIR="$VOLUME/models"
+    echo "worker-comfyui-custom: Network volume detected, downloading to $MODELS_DIR"
+else
+    MODELS_DIR="/comfyui/models"
+    echo "worker-comfyui-custom: No network volume, downloading to local $MODELS_DIR"
+fi
 CHECKPOINTS_DIR="$MODELS_DIR/checkpoints"
 LORAS_DIR="$MODELS_DIR/loras"
-
-echo "worker-comfyui-custom: Checking for models on network volume..."
-
-# Check if volume is mounted
-if [ ! -d "$VOLUME" ]; then
-    echo "worker-comfyui-custom: No network volume mounted at $VOLUME, skipping model download"
-    exit 0
-fi
 
 # Create directories if they don't exist
 mkdir -p "$CHECKPOINTS_DIR" "$LORAS_DIR" 2>/dev/null

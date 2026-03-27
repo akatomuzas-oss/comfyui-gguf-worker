@@ -1,6 +1,6 @@
-FROM runpod/worker-comfyui:latest-base
-# Rebuild: 2026-03-27 — auto-download models to network volume on first start
-# Volume switched from q1t7ny8kys (corrupted) to v3miry3ae9 (aivora-models)
+FROM runpod/worker-comfyui:5.5.1-base
+# Rebuild: 2026-03-27 — downloads models to local /comfyui/models if no volume
+# FlashBoot enabled — first cold start downloads, subsequent boots from snapshot
 
 # Copy the model download script
 COPY download-models.sh /download-models.sh
