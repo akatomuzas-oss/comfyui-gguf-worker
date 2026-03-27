@@ -87,9 +87,10 @@ download_if_missing \
     "igbaddie-PN LoRA" \
     1000000
 
-# AmateurStyle v1 Pony Realism (CivitAI model 1410317, version 1594293)
+# AmateurStyle v1 Pony Realism (HuggingFace mirror — CivitAI requires auth)
+# Original: CivitAI model 480835 "Pony Amateur" by MarkBW, version 534756
 download_if_missing \
-    "https://civitai.com/api/download/models/1594293" \
+    "https://huggingface.co/MarkBW/pony-amateur-xl/resolve/main/AmateurStyle_v1_PONY_REALISM.safetensors" \
     "$LORAS_DIR/AmateurStyle_v1_PONY_REALISM.safetensors" \
     "AmateurStyle v1 Pony Realism LoRA" \
     1000000
