@@ -7,4 +7,5 @@ COPY download-models.sh /download-models.sh
 RUN chmod +x /download-models.sh
 
 # Override CMD to run model download before normal startup
-CMD ["/bin/bash", "-c", "/download-models.sh && /start.sh"]
+# Use ; instead of && so start.sh always runs even if download fails
+CMD ["/bin/bash", "-c", "/download-models.sh ; /start.sh"]
