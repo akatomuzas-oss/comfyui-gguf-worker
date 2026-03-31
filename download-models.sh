@@ -1,6 +1,6 @@
 #!/bin/bash
-# Download CyberRealistic Pony models on cold start
-# Downloads to /comfyui/models (local) or /runpod-volume/models (if volume mounted)
+# Download models on cold start
+# Downloads to /runpod-volume/models (if volume mounted) or /comfyui/models (local)
 # All downloads run in parallel for speed. Script NEVER exits with error.
 
 set +e
@@ -15,7 +15,10 @@ else
 fi
 CHECKPOINTS_DIR="$MODELS_DIR/checkpoints"
 LORAS_DIR="$MODELS_DIR/loras"
-mkdir -p "$CHECKPOINTS_DIR" "$LORAS_DIR" 2>/dev/null
+IPADAPTER_DIR="$MODELS_DIR/ipadapter"
+CLIP_VISION_DIR="$MODELS_DIR/clip_vision"
+ULTRALYTICS_DIR="$MODELS_DIR/ultralytics/bbox"
+mkdir -p "$CHECKPOINTS_DIR" "$LORAS_DIR" "$IPADAPTER_DIR" "$CLIP_VISION_DIR" "$ULTRALYTICS_DIR" 2>/dev/null
 
 download() {
     local url="$1" dest="$2" name="$3" min_size="${4:-1000000}"
@@ -29,7 +32,7 @@ download() {
     fi
     echo "worker-comfyui-custom: Downloading $name ..."
     local start=$(date +%s)
-    wget --timeout=60 --tries=3 --max-redirect=5 -q -O "$dest" "$url" 2>&1
+    wget --timeout=120 --tries=3 --max-redirect=5 -q -O "$dest" "$url" 2>&1
     local end=$(date +%s)
     if [ -f "$dest" ]; then
         local size=$(stat -c%s "$dest" 2>/dev/null || echo "0")
@@ -43,7 +46,7 @@ download() {
     return 1
 }
 
-# Download all 3 in parallel
+# === Checkpoint + LoRAs ===
 download "https://huggingface.co/cyberdelia/CyberRealisticPony/resolve/main/CyberRealisticPony_V16.0_FP16.safetensors" \
     "$CHECKPOINTS_DIR/cyberrealistic-pony-v16.safetensors" "CyberRealistic Pony v16" 3000000000 &
 PID1=$!
@@ -56,11 +59,28 @@ download "https://huggingface.co/MarkBW/pony-amateur-xl/resolve/main/AmateurStyl
     "$LORAS_DIR/AmateurStyle_v1_PONY_REALISM.safetensors" "AmateurStyle LoRA" 1000000 &
 PID3=$!
 
+# === IP-Adapter face locking models ===
+download "https://huggingface.co/h94/IP-Adapter/resolve/main/sdxl_models/ip-adapter-plus-face_sdxl_vit-h.safetensors" \
+    "$IPADAPTER_DIR/ip-adapter-plus-face_sdxl_vit-h.safetensors" "IP-Adapter Plus Face SDXL" 50000000 &
+PID4=$!
+
+download "https://huggingface.co/h94/IP-Adapter/resolve/main/models/image_encoder/model.safetensors" \
+    "$CLIP_VISION_DIR/CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors" "CLIP-ViT-H-14" 1000000000 &
+PID5=$!
+
+# === FaceDetailer YOLO model ===
+download "https://huggingface.co/ultralytics/assets/resolve/main/yolov8m-face.pt" \
+    "$ULTRALYTICS_DIR/face_yolov8m.pt" "YOLO v8m Face" 10000000 &
+PID6=$!
+
 # Wait for all downloads
-wait $PID1 $PID2 $PID3
+wait $PID1 $PID2 $PID3 $PID4 $PID5 $PID6
 
 echo "worker-comfyui-custom: Download complete."
 ls -lh "$CHECKPOINTS_DIR/" 2>/dev/null
 ls -lh "$LORAS_DIR/" 2>/dev/null
+ls -lh "$IPADAPTER_DIR/" 2>/dev/null
+ls -lh "$CLIP_VISION_DIR/" 2>/dev/null
+ls -lh "$ULTRALYTICS_DIR/" 2>/dev/null
 
 exit 0
