@@ -1,5 +1,5 @@
-FROM runpod/worker-comfyui:5.5.1-base
-# Rebuild: 2026-04-01i
+FROM runpod/worker-comfyui:latest-base
+# Rebuild: 2026-04-02
 # CRITICAL: Do NOT upgrade numpy — base image has 1.26.x, numpy 2.x breaks torch.
 
 # All deps for Impact Pack, Impact Subpack, and IPAdapter Plus.
@@ -7,7 +7,7 @@ FROM runpod/worker-comfyui:5.5.1-base
 # Subpack adds: ultralytics
 # sam2 from GitHub is heavy — skip it (not used in our workflow, only segment_anything is)
 # aria2c for multi-connection downloads — 16 connections per file vs wget's 1
-RUN apt-get update -qq && apt-get install -y --no-install-recommends aria2 && rm -rf /var/lib/apt/lists/*
+RUN apt-get update -qq && apt-get install -y --no-install-recommends aria2 ffmpeg && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir \
     piexif \
@@ -27,7 +27,9 @@ RUN pip install --no-cache-dir \
 RUN cd /comfyui/custom_nodes && \
     git clone --depth 1 https://github.com/cubiq/ComfyUI_IPAdapter_plus.git && \
     git clone --depth 1 https://github.com/ltdrdata/ComfyUI-Impact-Pack.git && \
-    git clone --depth 1 https://github.com/ltdrdata/ComfyUI-Impact-Subpack.git
+    git clone --depth 1 https://github.com/ltdrdata/ComfyUI-Impact-Subpack.git && \
+    git clone --depth 1 https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git && \
+    cd ComfyUI-VideoHelperSuite && pip install --no-cache-dir -r requirements.txt 2>/dev/null || true
 
 # Tell ComfyUI to load extra model paths from the volume config
 # start.sh appends ${EXTRA_ARGS} to `python main.py`
