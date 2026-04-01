@@ -24,17 +24,28 @@ ULTRALYTICS_DIR="$MODELS_DIR/ultralytics/bbox"
 mkdir -p "$CHECKPOINTS_DIR" "$LORAS_DIR" "$IPADAPTER_DIR" "$CLIP_VISION_DIR" "$ULTRALYTICS_DIR" "$CUSTOM_NODES_DIR" 2>/dev/null
 
 # === Sync custom nodes from Docker image to volume ===
-# Always overwrite to ensure latest code + no broken state
+# Use symlinks — atomic, no partial copy issues, always points to Docker's fresh code
 if [ -d "/docker-custom-nodes" ]; then
-    echo "worker-comfyui-custom: Syncing custom nodes to volume..."
+    echo "worker-comfyui-custom: Syncing custom nodes to volume via symlinks..."
+    echo "worker-comfyui-custom: CUSTOM_NODES_DIR=$CUSTOM_NODES_DIR"
+    echo "worker-comfyui-custom: Docker nodes: $(ls /docker-custom-nodes/)"
     for node_dir in /docker-custom-nodes/*/; do
         node_name=$(basename "$node_dir")
         target="$CUSTOM_NODES_DIR/$node_name"
+        # Remove whatever was there (old clone, broken copy, stale symlink)
         rm -rf "$target"
-        cp -r "$node_dir" "$target"
-        echo "worker-comfyui-custom: Synced $node_name"
+        # Symlink to the Docker image's copy
+        ln -sfn "$node_dir" "$target"
+        echo "worker-comfyui-custom: Linked $node_name → $(readlink "$target")"
+        # Verify the node has __init__.py
+        if [ -f "$target/__init__.py" ]; then
+            echo "worker-comfyui-custom: ✓ $node_name/__init__.py exists"
+        else
+            echo "worker-comfyui-custom: ✗ WARN: $node_name/__init__.py MISSING"
+        fi
     done
-    echo "worker-comfyui-custom: Custom nodes synced."
+    # List all custom nodes on volume for debugging
+    echo "worker-comfyui-custom: All custom_nodes: $(ls "$CUSTOM_NODES_DIR/" 2>/dev/null)"
 else
     echo "worker-comfyui-custom: WARN: /docker-custom-nodes not found, skipping sync"
 fi
