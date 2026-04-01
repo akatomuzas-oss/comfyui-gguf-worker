@@ -1,8 +1,7 @@
 #!/bin/bash
-# Download models + sync custom nodes on cold start
-# The worker runs ComfyUI from /workspace/ComfyUI/ (symlinked to /runpod-volume)
-# Custom nodes are baked into Docker at /docker-custom-nodes/ and synced here.
-# Pip deps must be pre-installed in /runpod-volume/venv/ via a GPU pod.
+# Download models on cold start
+# Custom node code lives on the network volume at /runpod-volume/ComfyUI/custom_nodes/
+# Pip deps are baked into the Docker image.
 # All downloads run in parallel. Script NEVER exits with error.
 
 set +e
@@ -10,11 +9,9 @@ set +e
 VOLUME="/runpod-volume"
 if [ -d "$VOLUME" ]; then
     MODELS_DIR="$VOLUME/models"
-    CUSTOM_NODES_DIR="$VOLUME/ComfyUI/custom_nodes"
     echo "worker-comfyui-custom: Volume detected → $MODELS_DIR"
 else
     MODELS_DIR="/comfyui/models"
-    CUSTOM_NODES_DIR="/comfyui/custom_nodes"
     echo "worker-comfyui-custom: No volume → local $MODELS_DIR"
 fi
 CHECKPOINTS_DIR="$MODELS_DIR/checkpoints"
@@ -22,36 +19,10 @@ LORAS_DIR="$MODELS_DIR/loras"
 IPADAPTER_DIR="$MODELS_DIR/ipadapter"
 CLIP_VISION_DIR="$MODELS_DIR/clip_vision"
 ULTRALYTICS_DIR="$MODELS_DIR/ultralytics/bbox"
-mkdir -p "$CHECKPOINTS_DIR" "$LORAS_DIR" "$IPADAPTER_DIR" "$CLIP_VISION_DIR" "$ULTRALYTICS_DIR" "$CUSTOM_NODES_DIR" 2>/dev/null
+mkdir -p "$CHECKPOINTS_DIR" "$LORAS_DIR" "$IPADAPTER_DIR" "$CLIP_VISION_DIR" "$ULTRALYTICS_DIR" 2>/dev/null
 
-# === Sync custom nodes from Docker image to volume ===
-# Node CODE is baked into Docker. Pip deps must already be in the volume venv
-# (installed once via GPU pod: source /runpod-volume/venv/bin/activate && pip install ...)
-if [ -d "/docker-custom-nodes" ]; then
-    echo "worker-comfyui-custom: Syncing custom nodes to volume..."
-    for node_dir in /docker-custom-nodes/*/; do
-        node_name=$(basename "$node_dir")
-        target="$CUSTOM_NODES_DIR/$node_name"
-        rm -rf "$target"
-        cp -a "$node_dir" "$target"
-        if [ -f "$target/__init__.py" ]; then
-            echo "worker-comfyui-custom: ✓ $node_name synced"
-        else
-            echo "worker-comfyui-custom: ✗ $node_name — missing __init__.py!"
-        fi
-    done
-fi
-
-# === Quick dep check (diagnostic only, no installs) ===
-VENV_PYTHON="$VOLUME/venv/bin/python"
-if [ -f "$VENV_PYTHON" ]; then
-    echo "worker-comfyui-custom: Checking venv deps..."
-    $VENV_PYTHON -c "import insightface; print('  insightface: OK')" 2>/dev/null || echo "  insightface: MISSING — run setup-ipadapter-runpod.sh on a GPU pod"
-    $VENV_PYTHON -c "import ultralytics; print('  ultralytics: OK')" 2>/dev/null || echo "  ultralytics: MISSING — run: source /runpod-volume/venv/bin/activate && pip install ultralytics"
-    $VENV_PYTHON -c "import onnxruntime; print('  onnxruntime: OK')" 2>/dev/null || echo "  onnxruntime: MISSING"
-else
-    echo "worker-comfyui-custom: No venv found — system Python will be used"
-fi
+# Clean up broken _pip_deps directory if it exists (leftover from old setup attempts)
+rm -rf "$VOLUME/ComfyUI/custom_nodes/_pip_deps" 2>/dev/null
 
 download() {
     local url="$1" dest="$2" name="$3" min_size="${4:-1000000}"

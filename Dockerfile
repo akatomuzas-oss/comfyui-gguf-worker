@@ -1,24 +1,19 @@
 FROM runpod/worker-comfyui:5.5.1-base
-# Rebuild: 2026-04-01c
+# Rebuild: 2026-04-01d
 # Worker runs ComfyUI from /workspace/ComfyUI/ (volume) using system Python.
-# start.sh does: rm -rf /workspace && ln -s /runpod-volume /workspace
-# So custom nodes must end up at /runpod-volume/ComfyUI/custom_nodes/
+# No venv exists — system Python IS the ComfyUI Python.
+# Custom node code lives on the network volume already.
+# We just need pip deps that custom nodes require beyond base ComfyUI.
 
-# Pre-install ALL pip deps custom nodes might need
-RUN pip install --no-cache-dir ultralytics onnxruntime insightface
+# Install deps for custom nodes WITHOUT upgrading numpy (base image has 1.26.x)
+# --no-deps on insightface to prevent it pulling numpy 2.x which breaks torch
+RUN pip install --no-cache-dir --no-deps insightface && \
+    pip install --no-cache-dir onnxruntime onnx easydict prettytable albumentations && \
+    pip install --no-cache-dir ultralytics && \
+    pip install --no-cache-dir piexif segment_anything
 
-# Clone custom nodes into Docker image for syncing to volume
-RUN git clone --depth 1 https://github.com/cubiq/ComfyUI_IPAdapter_plus.git /docker-custom-nodes/ComfyUI_IPAdapter_plus && \
-    git clone --depth 1 https://github.com/ltdrdata/ComfyUI-Impact-Pack.git /docker-custom-nodes/ComfyUI-Impact-Pack && \
-    cd /docker-custom-nodes/ComfyUI-Impact-Pack && \
-    pip install --no-cache-dir -r requirements.txt || true && \
-    python install.py || true
-
-# Pre-flight diagnostic script
-COPY preflight.py /preflight.py
-
-# Model download + node setup script
+# Model download script (no custom node syncing needed — nodes are on the volume)
 COPY download-models.sh /download-models.sh
 RUN chmod +x /download-models.sh
 
-CMD ["/bin/bash", "-c", "/download-models.sh ; python /preflight.py ; /start.sh"]
+CMD ["/bin/bash", "-c", "/download-models.sh ; /start.sh"]
