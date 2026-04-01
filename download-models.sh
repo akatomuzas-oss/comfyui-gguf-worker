@@ -1,21 +1,17 @@
 #!/bin/bash
-# Download models + install custom nodes on cold start
-# The worker runs ComfyUI from /runpod-volume/ComfyUI/ using /runpod-volume/venv/
-# So custom nodes and pip deps must be installed THERE, not in the Docker image.
-# All downloads run in parallel for speed. Script NEVER exits with error.
+# Download models + install custom node deps on cold start
+# The worker runs ComfyUI from /workspace/ComfyUI/ (symlinked to /runpod-volume)
+# Custom nodes are already on the volume. We just need pip deps in system Python.
+# All downloads run in parallel. Script NEVER exits with error.
 
 set +e
 
 VOLUME="/runpod-volume"
 if [ -d "$VOLUME" ]; then
     MODELS_DIR="$VOLUME/models"
-    CUSTOM_NODES_DIR="$VOLUME/ComfyUI/custom_nodes"
-    VENV_PIP="$VOLUME/venv/bin/pip"
     echo "worker-comfyui-custom: Volume detected → $MODELS_DIR"
 else
     MODELS_DIR="/comfyui/models"
-    CUSTOM_NODES_DIR="/comfyui/custom_nodes"
-    VENV_PIP="pip"
     echo "worker-comfyui-custom: No volume → local $MODELS_DIR"
 fi
 CHECKPOINTS_DIR="$MODELS_DIR/checkpoints"
@@ -24,6 +20,12 @@ IPADAPTER_DIR="$MODELS_DIR/ipadapter"
 CLIP_VISION_DIR="$MODELS_DIR/clip_vision"
 ULTRALYTICS_DIR="$MODELS_DIR/ultralytics/bbox"
 mkdir -p "$CHECKPOINTS_DIR" "$LORAS_DIR" "$IPADAPTER_DIR" "$CLIP_VISION_DIR" "$ULTRALYTICS_DIR" 2>/dev/null
+
+# === Install pip deps for custom nodes (runs every cold start, fast if already cached) ===
+# Impact Pack needs ultralytics + onnxruntime but doesn't list them in requirements.txt
+# These install into the container's system Python which ComfyUI uses
+echo "worker-comfyui-custom: Installing custom node pip deps..."
+pip install --no-cache-dir ultralytics onnxruntime 2>&1 | tail -3
 
 download() {
     local url="$1" dest="$2" name="$3" min_size="${4:-1000000}"
@@ -50,37 +52,6 @@ download() {
     rm -f "$dest"
     return 1
 }
-
-# === Install custom nodes into the volume's ComfyUI ===
-# These persist on the volume — only cloned once, then skipped on subsequent starts
-if [ -d "$CUSTOM_NODES_DIR" ]; then
-    # IP-Adapter Plus (face identity locking)
-    if [ ! -d "$CUSTOM_NODES_DIR/ComfyUI_IPAdapter_plus" ]; then
-        echo "worker-comfyui-custom: Installing ComfyUI_IPAdapter_plus..."
-        cd "$CUSTOM_NODES_DIR" && git clone https://github.com/cubiq/ComfyUI_IPAdapter_plus 2>&1
-    else
-        echo "worker-comfyui-custom: ComfyUI_IPAdapter_plus already installed, skip"
-    fi
-
-    # Impact Pack (FaceDetailer)
-    if [ ! -d "$CUSTOM_NODES_DIR/ComfyUI-Impact-Pack" ]; then
-        echo "worker-comfyui-custom: Installing ComfyUI-Impact-Pack..."
-        cd "$CUSTOM_NODES_DIR" && git clone https://github.com/ltdrdata/ComfyUI-Impact-Pack 2>&1
-        cd ComfyUI-Impact-Pack && $VENV_PIP install --no-cache-dir -r requirements.txt 2>&1
-    else
-        echo "worker-comfyui-custom: ComfyUI-Impact-Pack already installed, skip"
-    fi
-
-    # Install ultralytics + onnxruntime into the volume's venv (Impact Pack needs these)
-    # Use a marker file to avoid re-installing every cold start
-    if [ ! -f "$VOLUME/.ultralytics_installed" ]; then
-        echo "worker-comfyui-custom: Installing ultralytics + onnxruntime into venv..."
-        $VENV_PIP install --no-cache-dir ultralytics onnxruntime 2>&1
-        touch "$VOLUME/.ultralytics_installed"
-    else
-        echo "worker-comfyui-custom: ultralytics already installed, skip"
-    fi
-fi
 
 # === Checkpoint + LoRAs ===
 download "https://huggingface.co/cyberdelia/CyberRealisticPony/resolve/main/CyberRealisticPony_V16.0_FP16.safetensors" \
@@ -113,10 +84,5 @@ PID6=$!
 wait $PID1 $PID2 $PID3 $PID4 $PID5 $PID6
 
 echo "worker-comfyui-custom: All setup complete."
-ls -lh "$CHECKPOINTS_DIR/" 2>/dev/null
-ls -lh "$LORAS_DIR/" 2>/dev/null
-ls -lh "$IPADAPTER_DIR/" 2>/dev/null
-ls -lh "$CLIP_VISION_DIR/" 2>/dev/null
-ls -lh "$ULTRALYTICS_DIR/" 2>/dev/null
 
 exit 0
