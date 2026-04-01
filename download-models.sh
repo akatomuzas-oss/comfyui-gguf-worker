@@ -66,8 +66,30 @@ for node_dir in "$VOLUME_NODES"/*/; do
     fi
 done
 
-# Create extra_model_paths.yaml — tells ComfyUI to also look at the volume for models
-# This is the official ComfyUI way to merge multiple model directories
+# MODEL PATH BRIDGE — symlink volume model dirs into Docker ComfyUI models
+# The extra_model_paths.yaml approach is unreliable, so we also directly symlink.
+DOCKER_MODELS="/comfyui/models"
+echo "worker-comfyui-custom: Bridging model directories..."
+for dir_name in checkpoints loras ipadapter clip_vision ultralytics; do
+    src="$MODELS_DIR/$dir_name"
+    dst="$DOCKER_MODELS/$dir_name"
+    if [ -d "$src" ]; then
+        if [ -L "$dst" ] || [ ! -d "$dst" ]; then
+            rm -rf "$dst" 2>/dev/null
+            ln -sf "$src" "$dst" && echo "worker-comfyui-custom:   ✓ models/$dir_name → docker"
+        else
+            # Docker already has this dir — symlink contents instead
+            for f in "$src"/*; do
+                [ -e "$f" ] || continue
+                fname=$(basename "$f")
+                [ ! -e "$dst/$fname" ] && ln -sf "$f" "$dst/$fname" 2>/dev/null
+            done
+            echo "worker-comfyui-custom:   ✓ models/$dir_name (contents linked)"
+        fi
+    fi
+done
+
+# Also create extra_model_paths.yaml as belt-and-suspenders
 EXTRA_PATHS_FILE="$VOLUME/ComfyUI/extra_model_paths.yaml"
 if [ -d "$VOLUME/ComfyUI" ]; then
     cat > "$EXTRA_PATHS_FILE" << 'YAMLEOF'
