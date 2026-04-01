@@ -1,10 +1,11 @@
 FROM runpod/worker-comfyui:5.5.1-base
-# Rebuild: 2026-04-01h
+# Rebuild: 2026-04-01i
 # CRITICAL: Do NOT upgrade numpy — base image has 1.26.x, numpy 2.x breaks torch.
 
-# Impact Pack + Subpack deps
-# Subpack needs: ultralytics, matplotlib, opencv-python-headless, dill
-# Impact Pack needs: piexif, segment_anything
+# All deps for Impact Pack, Impact Subpack, and IPAdapter Plus.
+# Impact Pack needs: segment_anything, scikit-image, piexif, transformers, opencv, scipy, dill, matplotlib
+# Subpack adds: ultralytics
+# sam2 from GitHub is heavy — skip it (not used in our workflow, only segment_anything is)
 RUN pip install --no-cache-dir \
     piexif \
     segment_anything \
@@ -12,6 +13,9 @@ RUN pip install --no-cache-dir \
     matplotlib \
     opencv-python-headless \
     dill \
+    scikit-image \
+    scipy \
+    transformers \
     "numpy<2" \
     && pip check 2>/dev/null || true
 
