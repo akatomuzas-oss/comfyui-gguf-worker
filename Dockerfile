@@ -6,7 +6,8 @@ FROM runpod/worker-comfyui:5.5.1-base
 RUN cd /comfyui/custom_nodes && \
     git clone https://github.com/cubiq/ComfyUI_IPAdapter_plus && \
     git clone https://github.com/ltdrdata/ComfyUI-Impact-Pack && \
-    cd ComfyUI-Impact-Pack && pip install --no-cache-dir -r requirements.txt
+    cd ComfyUI-Impact-Pack && pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir ultralytics onnxruntime
 
 # Copy the model download script
 COPY download-models.sh /download-models.sh
