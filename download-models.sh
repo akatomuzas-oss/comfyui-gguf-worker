@@ -1,7 +1,8 @@
 #!/bin/bash
-# Download models + sync custom nodes + fix venv deps on cold start
+# Download models + sync custom nodes on cold start
 # The worker runs ComfyUI from /workspace/ComfyUI/ (symlinked to /runpod-volume)
-# CRITICAL: start.sh activates /runpod-volume/venv/ for ComfyUI — pip deps must go there!
+# Custom nodes are baked into Docker at /docker-custom-nodes/ and synced here.
+# Pip deps must be pre-installed in /runpod-volume/venv/ via a GPU pod.
 # All downloads run in parallel. Script NEVER exits with error.
 
 set +e
@@ -23,20 +24,9 @@ CLIP_VISION_DIR="$MODELS_DIR/clip_vision"
 ULTRALYTICS_DIR="$MODELS_DIR/ultralytics/bbox"
 mkdir -p "$CHECKPOINTS_DIR" "$LORAS_DIR" "$IPADAPTER_DIR" "$CLIP_VISION_DIR" "$ULTRALYTICS_DIR" "$CUSTOM_NODES_DIR" 2>/dev/null
 
-# === Fix Python deps in the CORRECT environment ===
-# start.sh does: source /workspace/venv/bin/activate → ComfyUI uses venv Python
-# Our Docker pip installs go to system Python which ComfyUI NEVER sees!
-# Fix: install deps into venv if it exists, otherwise system Python is fine
-VENV_PIP="$VOLUME/venv/bin/pip"
-if [ -f "$VENV_PIP" ]; then
-    echo "worker-comfyui-custom: VENV DETECTED at $VOLUME/venv/ — installing deps there"
-    $VENV_PIP install --no-cache-dir insightface ultralytics onnxruntime 2>&1 | tail -5
-    echo "worker-comfyui-custom: Venv deps installed"
-else
-    echo "worker-comfyui-custom: No venv — system Python will be used"
-fi
-
 # === Sync custom nodes from Docker image to volume ===
+# Node CODE is baked into Docker. Pip deps must already be in the volume venv
+# (installed once via GPU pod: source /runpod-volume/venv/bin/activate && pip install ...)
 if [ -d "/docker-custom-nodes" ]; then
     echo "worker-comfyui-custom: Syncing custom nodes to volume..."
     for node_dir in /docker-custom-nodes/*/; do
@@ -50,9 +40,17 @@ if [ -d "/docker-custom-nodes" ]; then
             echo "worker-comfyui-custom: ✗ $node_name — missing __init__.py!"
         fi
     done
-    echo "worker-comfyui-custom: All custom_nodes: $(ls "$CUSTOM_NODES_DIR/" 2>/dev/null)"
+fi
+
+# === Quick dep check (diagnostic only, no installs) ===
+VENV_PYTHON="$VOLUME/venv/bin/python"
+if [ -f "$VENV_PYTHON" ]; then
+    echo "worker-comfyui-custom: Checking venv deps..."
+    $VENV_PYTHON -c "import insightface; print('  insightface: OK')" 2>/dev/null || echo "  insightface: MISSING — run setup-ipadapter-runpod.sh on a GPU pod"
+    $VENV_PYTHON -c "import ultralytics; print('  ultralytics: OK')" 2>/dev/null || echo "  ultralytics: MISSING — run: source /runpod-volume/venv/bin/activate && pip install ultralytics"
+    $VENV_PYTHON -c "import onnxruntime; print('  onnxruntime: OK')" 2>/dev/null || echo "  onnxruntime: MISSING"
 else
-    echo "worker-comfyui-custom: WARN: /docker-custom-nodes not found"
+    echo "worker-comfyui-custom: No venv found — system Python will be used"
 fi
 
 download() {
