@@ -116,7 +116,16 @@ download() {
     fi
     echo "worker-comfyui-custom: Downloading $name ..."
     local start=$(date +%s)
-    wget --timeout=120 --tries=3 --max-redirect=5 -q -O "$dest" "$url" 2>&1
+    local dest_dir=$(dirname "$dest")
+    local dest_file=$(basename "$dest")
+    # aria2c: 16 parallel connections per file — ~4-8x faster than wget for large models
+    if command -v aria2c &>/dev/null; then
+        aria2c -x 16 -s 16 --max-tries=3 --timeout=120 --max-file-not-found=3 \
+            --allow-overwrite=true --auto-file-renaming=false \
+            -d "$dest_dir" -o "$dest_file" "$url" 2>&1 | tail -1
+    else
+        wget --timeout=120 --tries=3 --max-redirect=5 -q -O "$dest" "$url" 2>&1
+    fi
     local end=$(date +%s)
     if [ -f "$dest" ]; then
         local size=$(stat -c%s "$dest" 2>/dev/null || echo "0")

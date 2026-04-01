@@ -6,6 +6,9 @@ FROM runpod/worker-comfyui:5.5.1-base
 # Impact Pack needs: segment_anything, scikit-image, piexif, transformers, opencv, scipy, dill, matplotlib
 # Subpack adds: ultralytics
 # sam2 from GitHub is heavy — skip it (not used in our workflow, only segment_anything is)
+# aria2c for multi-connection downloads — 16 connections per file vs wget's 1
+RUN apt-get update -qq && apt-get install -y --no-install-recommends aria2 && rm -rf /var/lib/apt/lists/*
+
 RUN pip install --no-cache-dir \
     piexif \
     segment_anything \
@@ -31,6 +34,7 @@ RUN cd /comfyui/custom_nodes && \
 ENV EXTRA_ARGS="--extra-model-paths-config /workspace/ComfyUI/extra_model_paths.yaml"
 
 COPY download-models.sh /download-models.sh
-RUN chmod +x /download-models.sh
+COPY warmup.sh /warmup.sh
+RUN chmod +x /download-models.sh /warmup.sh
 
-CMD ["/bin/bash", "-c", "/download-models.sh ; /start.sh"]
+CMD ["/bin/bash", "-c", "/download-models.sh ; /start.sh & sleep 15 && /warmup.sh && wait"]
