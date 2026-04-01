@@ -1,7 +1,7 @@
 #!/bin/bash
-# Download models + install custom node deps on cold start
+# Download models + sync custom nodes on cold start
 # The worker runs ComfyUI from /workspace/ComfyUI/ (symlinked to /runpod-volume)
-# Custom nodes are already on the volume. We just need pip deps in system Python.
+# Custom nodes are baked into Docker at /docker-custom-nodes/ and synced to volume here.
 # All downloads run in parallel. Script NEVER exits with error.
 
 set +e
@@ -9,9 +9,11 @@ set +e
 VOLUME="/runpod-volume"
 if [ -d "$VOLUME" ]; then
     MODELS_DIR="$VOLUME/models"
+    CUSTOM_NODES_DIR="$VOLUME/ComfyUI/custom_nodes"
     echo "worker-comfyui-custom: Volume detected → $MODELS_DIR"
 else
     MODELS_DIR="/comfyui/models"
+    CUSTOM_NODES_DIR="/comfyui/custom_nodes"
     echo "worker-comfyui-custom: No volume → local $MODELS_DIR"
 fi
 CHECKPOINTS_DIR="$MODELS_DIR/checkpoints"
@@ -19,7 +21,23 @@ LORAS_DIR="$MODELS_DIR/loras"
 IPADAPTER_DIR="$MODELS_DIR/ipadapter"
 CLIP_VISION_DIR="$MODELS_DIR/clip_vision"
 ULTRALYTICS_DIR="$MODELS_DIR/ultralytics/bbox"
-mkdir -p "$CHECKPOINTS_DIR" "$LORAS_DIR" "$IPADAPTER_DIR" "$CLIP_VISION_DIR" "$ULTRALYTICS_DIR" 2>/dev/null
+mkdir -p "$CHECKPOINTS_DIR" "$LORAS_DIR" "$IPADAPTER_DIR" "$CLIP_VISION_DIR" "$ULTRALYTICS_DIR" "$CUSTOM_NODES_DIR" 2>/dev/null
+
+# === Sync custom nodes from Docker image to volume ===
+# Always overwrite to ensure latest code + no broken state
+if [ -d "/docker-custom-nodes" ]; then
+    echo "worker-comfyui-custom: Syncing custom nodes to volume..."
+    for node_dir in /docker-custom-nodes/*/; do
+        node_name=$(basename "$node_dir")
+        target="$CUSTOM_NODES_DIR/$node_name"
+        rm -rf "$target"
+        cp -r "$node_dir" "$target"
+        echo "worker-comfyui-custom: Synced $node_name"
+    done
+    echo "worker-comfyui-custom: Custom nodes synced."
+else
+    echo "worker-comfyui-custom: WARN: /docker-custom-nodes not found, skipping sync"
+fi
 
 download() {
     local url="$1" dest="$2" name="$3" min_size="${4:-1000000}"
