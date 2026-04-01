@@ -25,38 +25,46 @@ mkdir -p "$CHECKPOINTS_DIR" "$LORAS_DIR" "$IPADAPTER_DIR" "$CLIP_VISION_DIR" "$U
 rm -rf "$VOLUME/ComfyUI/custom_nodes/_pip_deps" 2>/dev/null
 
 # =============================================================================
-# CUSTOM NODE BRIDGE — symlink volume custom nodes into Docker ComfyUI
+# CUSTOM NODE BRIDGE — ensure nodes are visible no matter which path ComfyUI uses
 # =============================================================================
-# Problem: ComfyUI may run from /comfyui/ (Docker) or /workspace/ComfyUI/ (volume).
-# The base image's start.sh does: rm -rf /workspace && ln -s /runpod-volume /workspace
-# then cd /workspace/ComfyUI && python main.py. But if ComfyUI's node scanner
-# uses a hardcoded path or the symlink race-conditions, custom nodes are invisible.
-#
-# Fix: symlink every custom node from the volume into BOTH possible locations,
-# AND create extra_model_paths.yaml as a belt-and-suspenders config.
+# Custom nodes are baked into Docker at /comfyui/custom_nodes/.
+# But start.sh may run ComfyUI from /workspace/ComfyUI/ (= /runpod-volume/ComfyUI/).
+# Bridge: symlink Docker-baked nodes into the volume path so both locations work.
 # =============================================================================
 
-VOLUME_NODES="$VOLUME/ComfyUI/custom_nodes"
 DOCKER_NODES="/comfyui/custom_nodes"
+VOLUME_COMFYUI="$VOLUME/ComfyUI"
+VOLUME_NODES="$VOLUME_COMFYUI/custom_nodes"
 
-if [ -d "$VOLUME_NODES" ] && [ -d "$DOCKER_NODES" ]; then
-    echo "worker-comfyui-custom: Bridging custom nodes from volume → Docker..."
-    for node_dir in "$VOLUME_NODES"/*/; do
-        [ -d "$node_dir" ] || continue
-        node_name=$(basename "$node_dir")
-        # Skip internal dirs
-        [[ "$node_name" == __pycache__* ]] && continue
-        [[ "$node_name" == .* ]] && continue
-        if [ ! -e "$DOCKER_NODES/$node_name" ]; then
-            ln -sf "$node_dir" "$DOCKER_NODES/$node_name" 2>/dev/null && \
-                echo "worker-comfyui-custom:   ✓ $node_name"
-        else
-            echo "worker-comfyui-custom:   · $node_name (already exists)"
-        fi
-    done
-else
-    echo "worker-comfyui-custom: WARN: Volume nodes=$VOLUME_NODES exists=$([ -d "$VOLUME_NODES" ] && echo yes || echo no), Docker nodes=$DOCKER_NODES exists=$([ -d "$DOCKER_NODES" ] && echo yes || echo no)"
-fi
+# Ensure volume ComfyUI custom_nodes dir exists
+mkdir -p "$VOLUME_NODES" 2>/dev/null
+
+# Bridge Docker-baked nodes → volume (so /workspace/ComfyUI/ path finds them)
+echo "worker-comfyui-custom: Bridging Docker custom nodes → volume..."
+for node_dir in "$DOCKER_NODES"/*/; do
+    [ -d "$node_dir" ] || continue
+    node_name=$(basename "$node_dir")
+    [[ "$node_name" == __pycache__* ]] && continue
+    [[ "$node_name" == .* ]] && continue
+    if [ ! -e "$VOLUME_NODES/$node_name" ]; then
+        ln -sf "$node_dir" "$VOLUME_NODES/$node_name" 2>/dev/null && \
+            echo "worker-comfyui-custom:   ✓ $node_name → volume"
+    else
+        echo "worker-comfyui-custom:   · $node_name (already on volume)"
+    fi
+done
+
+# Also bridge any extra volume-only nodes → Docker (belt and suspenders)
+for node_dir in "$VOLUME_NODES"/*/; do
+    [ -d "$node_dir" ] || continue
+    node_name=$(basename "$node_dir")
+    [[ "$node_name" == __pycache__* ]] && continue
+    [[ "$node_name" == .* ]] && continue
+    if [ ! -e "$DOCKER_NODES/$node_name" ]; then
+        ln -sf "$node_dir" "$DOCKER_NODES/$node_name" 2>/dev/null && \
+            echo "worker-comfyui-custom:   ✓ $node_name → docker"
+    fi
+done
 
 # Create extra_model_paths.yaml — tells ComfyUI to also look at the volume for models
 # This is the official ComfyUI way to merge multiple model directories
