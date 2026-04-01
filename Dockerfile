@@ -1,5 +1,5 @@
 FROM runpod/worker-comfyui:latest-base
-# Rebuild: 2026-04-02c — add TeaCache for video speed optimization
+# Rebuild: 2026-04-02d — fix TeaCache deps (einops + diffusers)
 # CRITICAL: Do NOT upgrade numpy — base image has 1.26.x, numpy 2.x breaks torch.
 
 # All deps for Impact Pack, Impact Subpack, and IPAdapter Plus.
@@ -33,6 +33,9 @@ RUN cd /comfyui/custom_nodes && \
 
 # VHS deps (imageio-ffmpeg bundles its own ffmpeg, but system ffmpeg is faster)
 RUN pip install --no-cache-dir -r /comfyui/custom_nodes/ComfyUI-VideoHelperSuite/requirements.txt
+
+# TeaCache deps (einops + diffusers)
+RUN pip install --no-cache-dir -r /comfyui/custom_nodes/ComfyUI-TeaCache/requirements.txt "numpy<2"
 
 # Tell ComfyUI to load extra model paths from the volume config
 # start.sh appends ${EXTRA_ARGS} to `python main.py`
