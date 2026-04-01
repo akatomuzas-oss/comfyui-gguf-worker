@@ -1,7 +1,7 @@
 #!/bin/bash
-# Download models + sync custom nodes on cold start
+# Download models + sync custom nodes + fix venv deps on cold start
 # The worker runs ComfyUI from /workspace/ComfyUI/ (symlinked to /runpod-volume)
-# Custom nodes are baked into Docker at /docker-custom-nodes/ and synced to volume here.
+# CRITICAL: start.sh activates /runpod-volume/venv/ for ComfyUI — pip deps must go there!
 # All downloads run in parallel. Script NEVER exits with error.
 
 set +e
@@ -23,31 +23,36 @@ CLIP_VISION_DIR="$MODELS_DIR/clip_vision"
 ULTRALYTICS_DIR="$MODELS_DIR/ultralytics/bbox"
 mkdir -p "$CHECKPOINTS_DIR" "$LORAS_DIR" "$IPADAPTER_DIR" "$CLIP_VISION_DIR" "$ULTRALYTICS_DIR" "$CUSTOM_NODES_DIR" 2>/dev/null
 
+# === Fix Python deps in the CORRECT environment ===
+# start.sh does: source /workspace/venv/bin/activate → ComfyUI uses venv Python
+# Our Docker pip installs go to system Python which ComfyUI NEVER sees!
+# Fix: install deps into venv if it exists, otherwise system Python is fine
+VENV_PIP="$VOLUME/venv/bin/pip"
+if [ -f "$VENV_PIP" ]; then
+    echo "worker-comfyui-custom: VENV DETECTED at $VOLUME/venv/ — installing deps there"
+    $VENV_PIP install --no-cache-dir insightface ultralytics onnxruntime 2>&1 | tail -5
+    echo "worker-comfyui-custom: Venv deps installed"
+else
+    echo "worker-comfyui-custom: No venv — system Python will be used"
+fi
+
 # === Sync custom nodes from Docker image to volume ===
-# Use symlinks — atomic, no partial copy issues, always points to Docker's fresh code
 if [ -d "/docker-custom-nodes" ]; then
-    echo "worker-comfyui-custom: Syncing custom nodes to volume via symlinks..."
-    echo "worker-comfyui-custom: CUSTOM_NODES_DIR=$CUSTOM_NODES_DIR"
-    echo "worker-comfyui-custom: Docker nodes: $(ls /docker-custom-nodes/)"
+    echo "worker-comfyui-custom: Syncing custom nodes to volume..."
     for node_dir in /docker-custom-nodes/*/; do
         node_name=$(basename "$node_dir")
         target="$CUSTOM_NODES_DIR/$node_name"
-        # Remove whatever was there (old clone, broken copy, stale symlink)
         rm -rf "$target"
-        # Symlink to the Docker image's copy
-        ln -sfn "$node_dir" "$target"
-        echo "worker-comfyui-custom: Linked $node_name → $(readlink "$target")"
-        # Verify the node has __init__.py
+        cp -a "$node_dir" "$target"
         if [ -f "$target/__init__.py" ]; then
-            echo "worker-comfyui-custom: ✓ $node_name/__init__.py exists"
+            echo "worker-comfyui-custom: ✓ $node_name synced"
         else
-            echo "worker-comfyui-custom: ✗ WARN: $node_name/__init__.py MISSING"
+            echo "worker-comfyui-custom: ✗ $node_name — missing __init__.py!"
         fi
     done
-    # List all custom nodes on volume for debugging
     echo "worker-comfyui-custom: All custom_nodes: $(ls "$CUSTOM_NODES_DIR/" 2>/dev/null)"
 else
-    echo "worker-comfyui-custom: WARN: /docker-custom-nodes not found, skipping sync"
+    echo "worker-comfyui-custom: WARN: /docker-custom-nodes not found"
 fi
 
 download() {
