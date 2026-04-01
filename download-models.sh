@@ -21,12 +21,6 @@ CLIP_VISION_DIR="$MODELS_DIR/clip_vision"
 ULTRALYTICS_DIR="$MODELS_DIR/ultralytics/bbox"
 mkdir -p "$CHECKPOINTS_DIR" "$LORAS_DIR" "$IPADAPTER_DIR" "$CLIP_VISION_DIR" "$ULTRALYTICS_DIR" 2>/dev/null
 
-# === Install pip deps for custom nodes (runs every cold start, fast if already cached) ===
-# Impact Pack needs ultralytics + onnxruntime but doesn't list them in requirements.txt
-# These install into the container's system Python which ComfyUI uses
-echo "worker-comfyui-custom: Installing custom node pip deps..."
-pip install --no-cache-dir ultralytics onnxruntime 2>&1 | tail -3
-
 download() {
     local url="$1" dest="$2" name="$3" min_size="${4:-1000000}"
     if [ -f "$dest" ]; then
