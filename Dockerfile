@@ -1,5 +1,5 @@
 FROM runpod/worker-comfyui:latest-base
-# Rebuild: 2026-04-02b — bake VHS + ffmpeg for MP4 video export
+# Rebuild: 2026-04-02c — add TeaCache for video speed optimization
 # CRITICAL: Do NOT upgrade numpy — base image has 1.26.x, numpy 2.x breaks torch.
 
 # All deps for Impact Pack, Impact Subpack, and IPAdapter Plus.
@@ -28,7 +28,8 @@ RUN cd /comfyui/custom_nodes && \
     git clone --depth 1 https://github.com/cubiq/ComfyUI_IPAdapter_plus.git && \
     git clone --depth 1 https://github.com/ltdrdata/ComfyUI-Impact-Pack.git && \
     git clone --depth 1 https://github.com/ltdrdata/ComfyUI-Impact-Subpack.git && \
-    git clone --depth 1 https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git
+    git clone --depth 1 https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git && \
+    git clone --depth 1 https://github.com/welltop-cn/ComfyUI-TeaCache.git
 
 # VHS deps (imageio-ffmpeg bundles its own ffmpeg, but system ffmpeg is faster)
 RUN pip install --no-cache-dir -r /comfyui/custom_nodes/ComfyUI-VideoHelperSuite/requirements.txt
