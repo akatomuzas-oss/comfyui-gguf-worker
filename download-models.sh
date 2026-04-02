@@ -166,8 +166,49 @@ download "https://huggingface.co/ultralytics/assets/resolve/main/yolov8m-face.pt
     "$ULTRALYTICS_DIR/face_yolov8m.pt" "YOLO v8m Face" 10000000 &
 PID6=$!
 
+# === WAN 2.2 I2V NSFW Motion LoRAs (dual-expert: high-noise + low-noise pairs) ===
+
+# POV Missionary (dtwr434) — high & low noise experts
+download "https://civitai.com/api/download/models/2098405" \
+    "$LORAS_DIR/wan2.2_i2v_highnoise_pov_missionary_v1.0.safetensors" "WAN Missionary LoRA (High)" 100000000 &
+PID7=$!
+
+download "https://civitai.com/api/download/models/2098396" \
+    "$LORAS_DIR/wan2.2_i2v_lownoise_pov_missionary_v1.0.safetensors" "WAN Missionary LoRA (Low)" 100000000 &
+PID8=$!
+
+# CubeyAI General NSFW — high & low noise experts (covers doggy, cowgirl, anal, etc.)
+download "https://civitai.com/api/download/models/2073605" \
+    "$LORAS_DIR/NSFW-22-H-e8.safetensors" "WAN NSFW General LoRA (High)" 100000000 &
+PID9=$!
+
+download "https://civitai.com/api/download/models/2083303" \
+    "$LORAS_DIR/NSFW-22-L-e8.safetensors" "WAN NSFW General LoRA (Low)" 100000000 &
+PID10=$!
+
+# Oral Insertion (LocalOptima) — bundled as zip, needs unzip
+download "https://civitai.com/api/download/models/2121297" \
+    "$LORAS_DIR/wan2.2-i2v-oral-insertion-v1.0.zip" "WAN Oral LoRA (zip)" 100000000 &
+PID11=$!
+
 # Wait for all downloads
-wait $PID1 $PID2 $PID3 $PID4 $PID5 $PID6
+wait $PID1 $PID2 $PID3 $PID4 $PID5 $PID6 $PID7 $PID8 $PID9 $PID10 $PID11
+
+# Unzip oral insertion LoRA if it exists and hasn't been extracted yet
+ORAL_ZIP="$LORAS_DIR/wan2.2-i2v-oral-insertion-v1.0.zip"
+if [ -f "$ORAL_ZIP" ]; then
+    # Check if already extracted (look for any oral insertion safetensors)
+    ORAL_COUNT=$(ls "$LORAS_DIR"/wan2.2*oral*safetensors 2>/dev/null | wc -l)
+    if [ "$ORAL_COUNT" -lt 2 ]; then
+        echo "worker-comfyui-custom: Extracting oral insertion LoRA..."
+        unzip -o "$ORAL_ZIP" -d "$LORAS_DIR/" 2>/dev/null
+        # List extracted files
+        ls -la "$LORAS_DIR"/wan2.2*oral* 2>/dev/null
+        echo "worker-comfyui-custom: Oral LoRA extracted"
+    else
+        echo "worker-comfyui-custom: Oral LoRA already extracted, skip"
+    fi
+fi
 
 echo "worker-comfyui-custom: All setup complete."
 

@@ -1,5 +1,5 @@
 FROM runpod/worker-comfyui:latest-base
-# Rebuild: 2026-04-02d — fix TeaCache deps (einops + diffusers)
+# Rebuild: 2026-04-02e — add NSFW motion LoRA downloads (missionary, oral, general)
 # CRITICAL: Do NOT upgrade numpy — base image has 1.26.x, numpy 2.x breaks torch.
 
 # All deps for Impact Pack, Impact Subpack, and IPAdapter Plus.
