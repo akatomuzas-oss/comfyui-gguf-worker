@@ -179,11 +179,11 @@ PID8=$!
 
 # CubeyAI General NSFW — high & low noise experts (covers doggy, cowgirl, anal, etc.)
 download "https://civitai.com/api/download/models/2073605" \
-    "$LORAS_DIR/NSFW-22-H-e8.safetensors" "WAN NSFW General LoRA (High)" 100000000 &
+    "$LORAS_DIR/wan2.2_i2v_highnoise_general_nsfw.safetensors" "WAN NSFW General LoRA (High)" 100000000 &
 PID9=$!
 
 download "https://civitai.com/api/download/models/2083303" \
-    "$LORAS_DIR/NSFW-22-L-e8.safetensors" "WAN NSFW General LoRA (Low)" 100000000 &
+    "$LORAS_DIR/wan2.2_i2v_lownoise_general_nsfw.safetensors" "WAN NSFW General LoRA (Low)" 100000000 &
 PID10=$!
 
 # Oral Insertion (LocalOptima) — bundled as zip, needs unzip
