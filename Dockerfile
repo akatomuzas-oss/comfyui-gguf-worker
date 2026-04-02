@@ -1,5 +1,5 @@
 FROM runpod/worker-comfyui:latest-base
-# Rebuild: 2026-04-02f — BoundBite v10 + correct LoRA filenames
+# Rebuild: 2026-04-02g — all models from HuggingFace, no network volume needed
 # CRITICAL: Do NOT upgrade numpy — base image has 1.26.x, numpy 2.x breaks torch.
 
 # All deps for Impact Pack, Impact Subpack, and IPAdapter Plus.
