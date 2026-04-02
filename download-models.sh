@@ -255,22 +255,23 @@ download "$HF_REPO/loras/wan2.2-i2v-low-oral-insertion-v1.0.safetensors" \
     "$LORAS_DIR/wan2.2-i2v-low-oral-insertion-v1.0.safetensors" "Oral LoRA (Low)" 100000000 &
 PID_VID11=$!
 
-# Paizuri / Titfuck LoRA (CivitAI)
-download "https://civitai.com/api/download/models/2342652" \
+# Paizuri / Titfuck LoRA (HuggingFace — dual expert pair)
+download "$HF_REPO/loras/wan2.2-i2v-high-pov-paizuri-v1.0.safetensors" \
     "$LORAS_DIR/wan2.2-i2v-high-pov-paizuri-v1.0.safetensors" "Paizuri LoRA (High)" 100000000 &
 PID_VID12=$!
 
-download "https://civitai.com/api/download/models/2342660" \
+download "$HF_REPO/loras/wan2.2-i2v-low-pov-paizuri-v1.0.safetensors" \
     "$LORAS_DIR/wan2.2-i2v-low-pov-paizuri-v1.0.safetensors" "Paizuri LoRA (Low)" 100000000 &
 PID_VID13=$!
 
-# Solo fingering LoRA (CivitAI)
-download "https://civitai.com/api/download/models/2565600" \
-    "$LORAS_DIR/wan2.2-i2v-high-finger-pussy-v1.0.safetensors" "Finger Pussy LoRA (High)" 100000000 &
+# Solo fingering LoRA (single-file, used on both experts)
+download "$HF_REPO/loras/wan2.2-i2v-fingering-v1.0.safetensors" \
+    "$LORAS_DIR/wan2.2-i2v-fingering-v1.0.safetensors" "Fingering LoRA" 100000000 &
 PID_VID14=$!
 
-download "https://civitai.com/api/download/models/2565733" \
-    "$LORAS_DIR/wan2.2-i2v-low-finger-pussy-v1.0.safetensors" "Finger Pussy LoRA (Low)" 100000000 &
+# Female masturbation LoRA (single-file, used on both experts)
+download "$HF_REPO/loras/wan2.2-i2v-female-masturbation-v1.0.safetensors" \
+    "$LORAS_DIR/wan2.2-i2v-female-masturbation-v1.0.safetensors" "Masturbation LoRA" 100000000 &
 PID_VID15=$!
 
 # =============================================================================

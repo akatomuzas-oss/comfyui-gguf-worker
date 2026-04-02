@@ -1,5 +1,5 @@
 FROM runpod/worker-comfyui:latest-base
-# Rebuild: 2026-04-02j — add paizuri + fingering LoRAs, 20fps playback
+# Rebuild: 2026-04-02k — LoRAs from HF: paizuri, fingering, masturbation
 # CRITICAL: Do NOT upgrade numpy — base image has 1.26.x, numpy 2.x breaks torch.
 
 # All deps for Impact Pack, Impact Subpack, and IPAdapter Plus.
