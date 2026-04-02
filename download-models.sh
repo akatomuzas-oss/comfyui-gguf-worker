@@ -19,15 +19,19 @@ else
     echo "worker-comfyui-custom: No volume → local $MODELS_DIR"
 fi
 CHECKPOINTS_DIR="$MODELS_DIR/checkpoints"
+DIFFUSION_DIR="$MODELS_DIR/diffusion_models"
+UNET_DIR="$MODELS_DIR/unet"
 LORAS_DIR="$MODELS_DIR/loras"
 IPADAPTER_DIR="$MODELS_DIR/ipadapter"
 CLIP_VISION_DIR="$MODELS_DIR/clip_vision"
+CLIP_DIR="$MODELS_DIR/clip"
 TEXT_ENCODERS_DIR="$MODELS_DIR/text_encoders"
 VAE_DIR="$MODELS_DIR/vae"
 UPSCALE_DIR="$MODELS_DIR/upscale_models"
 ULTRALYTICS_DIR="$MODELS_DIR/ultralytics/bbox"
-mkdir -p "$CHECKPOINTS_DIR" "$LORAS_DIR" "$IPADAPTER_DIR" "$CLIP_VISION_DIR" \
-         "$TEXT_ENCODERS_DIR" "$VAE_DIR" "$UPSCALE_DIR" "$ULTRALYTICS_DIR" 2>/dev/null
+mkdir -p "$CHECKPOINTS_DIR" "$DIFFUSION_DIR" "$UNET_DIR" "$LORAS_DIR" "$IPADAPTER_DIR" \
+         "$CLIP_VISION_DIR" "$CLIP_DIR" "$TEXT_ENCODERS_DIR" "$VAE_DIR" "$UPSCALE_DIR" \
+         "$ULTRALYTICS_DIR" 2>/dev/null
 
 # Clean up broken _pip_deps directory if it exists (leftover from old setup attempts)
 rm -rf "$VOLUME/ComfyUI/custom_nodes/_pip_deps" 2>/dev/null
@@ -69,7 +73,7 @@ done
 # MODEL PATH BRIDGE
 DOCKER_MODELS="/comfyui/models"
 echo "worker-comfyui-custom: Bridging model directories..."
-for dir_name in checkpoints loras ipadapter clip_vision ultralytics text_encoders vae upscale_models; do
+for dir_name in checkpoints diffusion_models unet loras ipadapter clip_vision clip text_encoders vae upscale_models ultralytics; do
     src="$MODELS_DIR/$dir_name"
     dst="$DOCKER_MODELS/$dir_name"
     if [ -d "$src" ]; then
@@ -187,18 +191,18 @@ PID_IMG8=$!
 # VIDEO GENERATION MODELS — BoundBite v10 dual-expert (~36GB total)
 # =============================================================================
 
-# BoundBite v10 checkpoints (13.5GB each — these are the bottleneck)
+# BoundBite v10 — UNETLoader scans diffusion_models/ and unet/, NOT checkpoints/
 download "$HF_REPO/checkpoints/wan22I2V-BoundBite-High-v10.safetensors" \
-    "$CHECKPOINTS_DIR/wan22I2V-BoundBite-High-v10.safetensors" "BoundBite v10 High" 10000000000 &
+    "$DIFFUSION_DIR/wan22I2V-BoundBite-High-v10.safetensors" "BoundBite v10 High" 10000000000 &
 PID_VID1=$!
 
 download "$HF_REPO/checkpoints/wan22I2V-BoundBite-Low-v10.safetensors" \
-    "$CHECKPOINTS_DIR/wan22I2V-BoundBite-Low-v10.safetensors" "BoundBite v10 Low" 10000000000 &
+    "$DIFFUSION_DIR/wan22I2V-BoundBite-Low-v10.safetensors" "BoundBite v10 Low" 10000000000 &
 PID_VID2=$!
 
-# Text encoder + VAE + CLIP Vision for WAN
+# Text encoder — CLIPLoader scans clip/ and text_encoders/
 download "$HF_REPO/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors" \
-    "$TEXT_ENCODERS_DIR/umt5_xxl_fp8_e4m3fn_scaled.safetensors" "UMT5-XXL FP8" 3000000000 &
+    "$CLIP_DIR/umt5_xxl_fp8_e4m3fn_scaled.safetensors" "UMT5-XXL FP8" 3000000000 &
 PID_VID3=$!
 
 download "$HF_REPO/vae/wan_2.1_vae.safetensors" \
