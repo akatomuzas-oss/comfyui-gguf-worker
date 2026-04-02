@@ -255,11 +255,30 @@ download "$HF_REPO/loras/wan2.2-i2v-low-oral-insertion-v1.0.safetensors" \
     "$LORAS_DIR/wan2.2-i2v-low-oral-insertion-v1.0.safetensors" "Oral LoRA (Low)" 100000000 &
 PID_VID11=$!
 
+# Paizuri / Titfuck LoRA (CivitAI)
+download "https://civitai.com/api/download/models/2342652" \
+    "$LORAS_DIR/wan2.2-i2v-high-pov-paizuri-v1.0.safetensors" "Paizuri LoRA (High)" 100000000 &
+PID_VID12=$!
+
+download "https://civitai.com/api/download/models/2342660" \
+    "$LORAS_DIR/wan2.2-i2v-low-pov-paizuri-v1.0.safetensors" "Paizuri LoRA (Low)" 100000000 &
+PID_VID13=$!
+
+# Solo fingering LoRA (CivitAI)
+download "https://civitai.com/api/download/models/2565600" \
+    "$LORAS_DIR/wan2.2-i2v-high-finger-pussy-v1.0.safetensors" "Finger Pussy LoRA (High)" 100000000 &
+PID_VID14=$!
+
+download "https://civitai.com/api/download/models/2565733" \
+    "$LORAS_DIR/wan2.2-i2v-low-finger-pussy-v1.0.safetensors" "Finger Pussy LoRA (Low)" 100000000 &
+PID_VID15=$!
+
 # =============================================================================
 # Wait for ALL downloads
 # =============================================================================
 wait $PID_IMG1 $PID_IMG2 $PID_IMG3 $PID_IMG4 $PID_IMG5 $PID_IMG6 $PID_IMG7 $PID_IMG8 \
-     $PID_VID1 $PID_VID2 $PID_VID3 $PID_VID4 $PID_VID5 $PID_VID6 $PID_VID7 $PID_VID8 $PID_VID9 $PID_VID10 $PID_VID11
+     $PID_VID1 $PID_VID2 $PID_VID3 $PID_VID4 $PID_VID5 $PID_VID6 $PID_VID7 $PID_VID8 $PID_VID9 $PID_VID10 $PID_VID11 \
+     $PID_VID12 $PID_VID13 $PID_VID14 $PID_VID15
 
 DOWNLOAD_END=$(date +%s)
 echo "worker-comfyui-custom: All downloads complete in $((DOWNLOAD_END-DOWNLOAD_START))s"
