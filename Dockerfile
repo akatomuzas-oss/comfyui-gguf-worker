@@ -1,5 +1,5 @@
 FROM runpod/worker-comfyui:latest-base
-# Rebuild: 2026-04-02h — fix model paths: diffusion_models for UNETLoader, clip for CLIPLoader
+# Rebuild: 2026-04-02i — HF auth headers for private repo downloads
 # CRITICAL: Do NOT upgrade numpy — base image has 1.26.x, numpy 2.x breaks torch.
 
 # All deps for Impact Pack, Impact Subpack, and IPAdapter Plus.

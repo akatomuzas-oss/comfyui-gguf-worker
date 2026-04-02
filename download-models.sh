@@ -7,6 +7,12 @@
 set +e
 
 HF_REPO="https://huggingface.co/tomuzas/aivora-models/resolve/main"
+# HF_TOKEN env var set on RunPod template for private repo access
+HF_AUTH=""
+if [ -n "$HF_TOKEN" ]; then
+    HF_AUTH="Authorization: Bearer $HF_TOKEN"
+    echo "worker-comfyui-custom: HF token found, private repo access enabled"
+fi
 
 # ── Model directories ──────────────────────────────────────────────────────────
 # Use /runpod-volume if available (legacy), otherwise /comfyui/models
@@ -125,11 +131,22 @@ download() {
     local dest_dir=$(dirname "$dest")
     local dest_file=$(basename "$dest")
     if command -v aria2c &>/dev/null; then
-        aria2c -x 16 -s 16 --max-tries=3 --timeout=120 --max-file-not-found=3 \
-            --allow-overwrite=true --auto-file-renaming=false --console-log-level=error \
-            -d "$dest_dir" -o "$dest_file" "$url" 2>&1 | tail -1
+        if [ -n "$HF_AUTH" ]; then
+            aria2c -x 16 -s 16 --max-tries=3 --timeout=120 --max-file-not-found=3 \
+                --allow-overwrite=true --auto-file-renaming=false --console-log-level=error \
+                --header="$HF_AUTH" \
+                -d "$dest_dir" -o "$dest_file" "$url" 2>&1 | tail -1
+        else
+            aria2c -x 16 -s 16 --max-tries=3 --timeout=120 --max-file-not-found=3 \
+                --allow-overwrite=true --auto-file-renaming=false --console-log-level=error \
+                -d "$dest_dir" -o "$dest_file" "$url" 2>&1 | tail -1
+        fi
     else
-        wget --timeout=120 --tries=3 --max-redirect=5 -q -O "$dest" "$url" 2>&1
+        if [ -n "$HF_AUTH" ]; then
+            wget --timeout=120 --tries=3 --max-redirect=5 -q --header="$HF_AUTH" -O "$dest" "$url" 2>&1
+        else
+            wget --timeout=120 --tries=3 --max-redirect=5 -q -O "$dest" "$url" 2>&1
+        fi
     fi
     local end=$(date +%s)
     if [ -f "$dest" ]; then
