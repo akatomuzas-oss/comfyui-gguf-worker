@@ -274,12 +274,50 @@ download "$HF_REPO/loras/wan2.2-i2v-female-masturbation-v1.0.safetensors" \
     "$LORAS_DIR/wan2.2-i2v-female-masturbation-v1.0.safetensors" "Masturbation LoRA" 100000000 &
 PID_VID15=$!
 
+# Pose-specific LoRAs (upgraded — dedicated HIGH+LOW pairs per pose)
+# Doggy Slider (CivitAI 1987345)
+download "$HF_REPO/loras/I2V_doggyslider_high.safetensors" \
+    "$LORAS_DIR/I2V_doggyslider_high.safetensors" "Doggy Slider LoRA (High)" 100000000 &
+PID_VID16=$!
+
+download "$HF_REPO/loras/I2V_doggyslider_low.safetensors" \
+    "$LORAS_DIR/I2V_doggyslider_low.safetensors" "Doggy Slider LoRA (Low)" 100000000 &
+PID_VID17=$!
+
+# Perfect Fingering (CivitAI 1952032)
+download "$HF_REPO/loras/Sensual_fingering_v1_high_noise.safetensors" \
+    "$LORAS_DIR/Sensual_fingering_v1_high_noise.safetensors" "Fingering v2 LoRA (High)" 100000000 &
+PID_VID18=$!
+
+download "$HF_REPO/loras/Sensual_fingering_v1_low_noise.safetensors" \
+    "$LORAS_DIR/Sensual_fingering_v1_low_noise.safetensors" "Fingering v2 LoRA (Low)" 100000000 &
+PID_VID19=$!
+
+# Breast Play v2 (CivitAI 1913617)
+download "$HF_REPO/loras/WAN2.2-BreastRubv2_HighNoise.safetensors" \
+    "$LORAS_DIR/WAN2.2-BreastRubv2_HighNoise.safetensors" "Breast Play LoRA (High)" 100000000 &
+PID_VID20=$!
+
+download "$HF_REPO/loras/WAN2.2-BreastRubv2_LowNoise.safetensors" \
+    "$LORAS_DIR/WAN2.2-BreastRubv2_LowNoise.safetensors" "Breast Play LoRA (Low)" 100000000 &
+PID_VID21=$!
+
+# Assertive Cowgirl (CivitAI 1566648)
+download "$HF_REPO/loras/Wan22-I2V-HIGH-Assertive_Cowgirl.safetensors" \
+    "$LORAS_DIR/Wan22-I2V-HIGH-Assertive_Cowgirl.safetensors" "Cowgirl LoRA (High)" 100000000 &
+PID_VID22=$!
+
+download "$HF_REPO/loras/Wan22-I2V-LOW-Assertive_Cowgirl.safetensors" \
+    "$LORAS_DIR/Wan22-I2V-LOW-Assertive_Cowgirl.safetensors" "Cowgirl LoRA (Low)" 100000000 &
+PID_VID23=$!
+
 # =============================================================================
 # Wait for ALL downloads
 # =============================================================================
 wait $PID_IMG1 $PID_IMG2 $PID_IMG3 $PID_IMG4 $PID_IMG5 $PID_IMG6 $PID_IMG7 $PID_IMG8 \
      $PID_VID1 $PID_VID2 $PID_VID3 $PID_VID4 $PID_VID5 $PID_VID6 $PID_VID7 $PID_VID8 $PID_VID9 $PID_VID10 $PID_VID11 \
-     $PID_VID12 $PID_VID13 $PID_VID14 $PID_VID15
+     $PID_VID12 $PID_VID13 $PID_VID14 $PID_VID15 $PID_VID16 $PID_VID17 $PID_VID18 $PID_VID19 $PID_VID20 $PID_VID21 \
+     $PID_VID22 $PID_VID23
 
 DOWNLOAD_END=$(date +%s)
 echo "worker-comfyui-custom: All downloads complete in $((DOWNLOAD_END-DOWNLOAD_START))s"
