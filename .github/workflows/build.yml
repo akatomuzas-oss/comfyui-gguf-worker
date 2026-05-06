@@ -21,6 +21,12 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      # buildx setup — required for the secret mount used in Dockerfile
+      # (RUN --mount=type=secret,id=civitai_token). Without this the
+      # build runs with the legacy builder which silently ignores the
+      # mount and the install script then fails because the token file
+      # doesn't exist.
+      - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v5
         with:
           context: .
@@ -29,3 +35,10 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository }}:latest
             ghcr.io/${{ github.repository }}:${{ github.sha }}
+          # Civitai requires an auth Bearer token to download
+          # DR34ML4Y. The secret is read inside the install-pose-loras
+          # RUN step via --mount=type=secret,id=civitai_token, which
+          # writes it to /run/secrets/civitai_token for the duration
+          # of that RUN only — never persisted into image layers.
+          secrets: |
+            civitai_token=${{ secrets.CIVITAI_TOKEN }}
