@@ -18,7 +18,7 @@ FROM runpod/worker-comfyui:latest-base
 # Subpack adds: ultralytics
 # sam2 from GitHub is heavy — skip it (not used in our workflow, only segment_anything is)
 # aria2c for multi-connection downloads, ffmpeg for VHS_VideoCombine H.264 encoding
-RUN apt-get update -qq && apt-get install -y --no-install-recommends aria2 ffmpeg && rm -rf /var/lib/apt/lists/*
+RUN apt-get update -qq && apt-get install -y --no-install-recommends aria2 ffmpeg curl && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir \
     piexif \
