@@ -1,5 +1,7 @@
 FROM runpod/worker-comfyui:latest-base
-# Rebuild: 2026-04-02k — LoRAs from HF: paizuri, fingering, masturbation
+# Rebuild: 2026-05-06 — bake pose LoRAs into image so cold-starts don't have
+# to download them and the worker doesn't depend on tomuzas/aivora-models
+# being populated. Files now ship inside /comfyui/models/loras/.
 # CRITICAL: Do NOT upgrade numpy — base image has 1.26.x, numpy 2.x breaks torch.
 
 # All deps for Impact Pack, Impact Subpack, and IPAdapter Plus.
@@ -40,6 +42,13 @@ RUN pip install --no-cache-dir -r /comfyui/custom_nodes/ComfyUI-TeaCache/require
 # Tell ComfyUI to load extra model paths from the volume config
 # start.sh appends ${EXTRA_ARGS} to `python main.py`
 ENV EXTRA_ARGS="--extra-model-paths-config /workspace/ComfyUI/extra_model_paths.yaml"
+
+# Bake pose LoRAs at build time. All sources are public HF author repos
+# (no auth needed). Files live at /comfyui/models/loras/ with the exact
+# filenames POSE_LORA_MAP in src/lib/comfyui/video-workflows.ts expects.
+# download-models.sh's "skip if exists" check leaves them alone at runtime.
+COPY install-pose-loras.sh /install-pose-loras.sh
+RUN chmod +x /install-pose-loras.sh && /install-pose-loras.sh && rm /install-pose-loras.sh
 
 COPY download-models.sh /download-models.sh
 COPY warmup.sh /warmup.sh
