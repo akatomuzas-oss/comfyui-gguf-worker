@@ -312,12 +312,39 @@ download "$HF_REPO/loras/Wan22-I2V-LOW-Assertive_Cowgirl.safetensors" \
 PID_VID23=$!
 
 # =============================================================================
+# PREMIUM WAN 2.2 14B I2V — vanilla model (no Lightning), the production
+# tier WAN_PREMIUM_CONFIG points at. Adds ~28 GB to cold-start download.
+#
+# When to use:
+#   - Long-form (>=5s, ~120+ frames) renders. BoundBite Lightning was
+#     tuned around 81 frames; past that, motion freezes / drifts /
+#     identity-morphs. Premium handles 240-frame native 10s shots with
+#     active negatives at CFG 4.5 fighting those exact failure modes.
+#   - Quality-critical work (marketing reels, hero clips). Premium runs
+#     at 25 steps + CFG 4.5 vs BoundBite's 8 steps + CFG 1.0 — meaningful
+#     fidelity bump per frame at ~3× the render time.
+#
+# Selected via WAN_QUALITY_MODE=premium env on the Vercel side; getWanConfig()
+# in src/lib/comfyui/model-router.ts swaps the model files at runtime.
+#
+# Sourced direct from public Comfy-Org repackaged repo (no HF token needed).
+# =============================================================================
+
+download "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_i2v_high_noise_14B_fp8_scaled.safetensors" \
+    "$DIFFUSION_DIR/wan2.2_i2v_high_noise_14B_fp8_scaled.safetensors" "Premium WAN 2.2 14B I2V High" 10000000000 &
+PID_VID24=$!
+
+download "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_i2v_low_noise_14B_fp8_scaled.safetensors" \
+    "$DIFFUSION_DIR/wan2.2_i2v_low_noise_14B_fp8_scaled.safetensors" "Premium WAN 2.2 14B I2V Low" 10000000000 &
+PID_VID25=$!
+
+# =============================================================================
 # Wait for ALL downloads
 # =============================================================================
 wait $PID_IMG1 $PID_IMG2 $PID_IMG3 $PID_IMG4 $PID_IMG5 $PID_IMG6 $PID_IMG7 $PID_IMG8 \
      $PID_VID1 $PID_VID2 $PID_VID3 $PID_VID4 $PID_VID5 $PID_VID6 $PID_VID7 $PID_VID8 $PID_VID9 $PID_VID10 $PID_VID11 \
      $PID_VID12 $PID_VID13 $PID_VID14 $PID_VID15 $PID_VID16 $PID_VID17 $PID_VID18 $PID_VID19 $PID_VID20 $PID_VID21 \
-     $PID_VID22 $PID_VID23
+     $PID_VID22 $PID_VID23 $PID_VID24 $PID_VID25
 
 DOWNLOAD_END=$(date +%s)
 echo "worker-comfyui-custom: All downloads complete in $((DOWNLOAD_END-DOWNLOAD_START))s"
