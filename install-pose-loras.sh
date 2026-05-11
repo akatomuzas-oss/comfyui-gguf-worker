@@ -88,6 +88,39 @@ echo "═══ DR34ML4Y All-In-One NSFW (DR34MSC4PE, civitai 1811313) ═══
 fetch_civitai 2553151 "DR34ML4Y_I2V_14B_HIGH_V2.safetensors"
 fetch_civitai 2553271 "DR34ML4Y_I2V_14B_LOW_V2.safetensors"
 
+# ═══ 2026-05-11: dedicated scene LoRAs (civitai) ═══════════════════════
+# DR34ML4Y is a broad multi-trigger AIO that's biased to certain comps
+# (e.g. its d0ubl3_bj trigger renders 2-cock scenes ~50% of the time
+# despite "one cock only" prompts). Replace problem-pose subsets with
+# dedicated single-trigger LoRAs trained on cleaner data.
+echo "═══ Multi-Girl Blowjobs (civitai 2569870, 3327 DL, 2026-04-24) ═══"
+# Trained on 2-3 women + ONE shared cock. Fixes double_blowjob's
+# persistent 2-cock failure. Author notes the LoRA is "a bit janky"
+# but composition consistency is much better than DR34ML4Y for this
+# specific scenario.
+fetch_civitai 2887523 "wan2.2_i2v_high_multibj_v1.safetensors"
+fetch_civitai 2887632 "wan2.2_i2v_low_multibj_v1.safetensors"
+
+echo "═══ Spraying Cum (civitai 2584746, 1921 DL, 2026-04-30) ═══"
+# Adds proper liquid physics + cum motion to cumshot scenes. Trigger:
+# "bc01, burst cum, spraying cum from vagina, massive cum bursting"
+# Replaces DR34ML4Y for missionary_cumshot. ver2 is the 293MB pair.
+fetch_civitai 2907076 "wan2.2_i2v_high_spraycum_v2.safetensors"
+fetch_civitai 2907086 "wan2.2_i2v_low_spraycum_v2.safetensors"
+
+echo "═══ 5UCK1T Suck Anything v2 — K3NK (civitai 2569583, 2924 DL) ═══"
+# K3NK's general-purpose oral-action refinement layer — trained on 224
+# clips of varied source videos. Stronger oral motion than DR34ML4Y AIO.
+# Trigger: "5uck1t". Replaces DR34ML4Y for plain blowjob pose.
+fetch_civitai 2887197 "wan2.2_i2v_high_5uck1t_v2.safetensors"
+fetch_civitai 2887210 "wan2.2_i2v_low_5uck1t_v2.safetensors"
+
+echo "═══ POV solo penis → blowjob (civitai 2522420, 3243 DL) ═══"
+# POV-camera blowjob LoRA. Bench-only for now (no production pose
+# routes to it yet); ships baked so we can A/B at next iteration.
+fetch_civitai 2835026 "wan2.2_i2v_high_povbj_v1.safetensors"
+fetch_civitai 2835044 "wan2.2_i2v_low_povbj_v1.safetensors"
+
 echo "═══ Doggystyle slider (wolfer45, dual-expert) ═══"
 fetch "https://huggingface.co/wolfer45/I2V_doggyslider_high/resolve/main/I2V_doggyslider_high.safetensors"
 fetch "https://huggingface.co/wolfer45/I2V_doggyslider_low/resolve/main/I2V_doggyslider_low.safetensors"

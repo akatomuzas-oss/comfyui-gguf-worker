@@ -4,7 +4,13 @@
 # install-pose-loras.sh never lands in image layers or build logs.
 
 FROM runpod/worker-comfyui:latest-base
-# Rebuild: 2026-05-06b — DR34ML4Y All-In-One LoRA replaces yeqiu's
+# Rebuild: 2026-05-11 — add 4 new dedicated scene LoRAs from civitai
+# (Multi-Girl Blowjobs, Spraying Cum, 5UCK1T, POV blowjob). These
+# replace DR34ML4Y for double_blowjob / missionary_cumshot / blowjob
+# poses that DR34ML4Y rendered with consistent failure modes (2 cocks,
+# weak liquid physics, generic oral motion). Net image size +1.7GB.
+#
+# Prior: 2026-05-06b — DR34ML4Y All-In-One LoRA replaces yeqiu's
 # missionary + oral-insertion. DR34MSC4PE-family LoRAs come from
 # civitai (not HF) so the install script needs an auth token mounted
 # at build time via BuildKit secret.
