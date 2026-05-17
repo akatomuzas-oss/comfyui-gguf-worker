@@ -61,18 +61,32 @@ RUN pip install --no-cache-dir \
 
 # Bake custom nodes directly into the Docker image.
 # Volume symlinks don't work — start.sh path handling breaks them.
+#
+# 2026-05-17: added RES4LYF for Juggernaut Z / Z-Image production.
+# Provides ClownsharkSampler_Beta — the official sampler node from
+# RunDiffusion's published Z-Image workflow. Stock KSampler + res_2s
+# is a workable fallback but ClownsharkSampler exposes the noise
+# schedule controls the model card recommends for max quality.
 RUN cd /comfyui/custom_nodes && \
     git clone --depth 1 https://github.com/cubiq/ComfyUI_IPAdapter_plus.git && \
     git clone --depth 1 https://github.com/ltdrdata/ComfyUI-Impact-Pack.git && \
     git clone --depth 1 https://github.com/ltdrdata/ComfyUI-Impact-Subpack.git && \
     git clone --depth 1 https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git && \
-    git clone --depth 1 https://github.com/welltop-cn/ComfyUI-TeaCache.git
+    git clone --depth 1 https://github.com/welltop-cn/ComfyUI-TeaCache.git && \
+    git clone --depth 1 https://github.com/ClownsharkBatwing/RES4LYF.git
 
 # VHS deps (imageio-ffmpeg bundles its own ffmpeg, but system ffmpeg is faster)
 RUN pip install --no-cache-dir -r /comfyui/custom_nodes/ComfyUI-VideoHelperSuite/requirements.txt
 
 # TeaCache deps (einops + diffusers)
 RUN pip install --no-cache-dir -r /comfyui/custom_nodes/ComfyUI-TeaCache/requirements.txt "numpy<2"
+
+# RES4LYF deps — keeps numpy pinned so torch doesn't break.
+# The repo has a requirements.txt but installs are best-effort: some
+# entries (like specific torch wheels) may pull dependencies we want
+# to stay frozen at the base image's versions. `|| true` lets the
+# image build keep going even if a single optional dep balks.
+RUN pip install --no-cache-dir -r /comfyui/custom_nodes/RES4LYF/requirements.txt "numpy<2" 2>&1 | tail -5 || true
 
 # Tell ComfyUI to load extra model paths from the volume config
 # start.sh appends ${EXTRA_ARGS} to `python main.py`
