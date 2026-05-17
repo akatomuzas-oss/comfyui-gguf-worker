@@ -4,7 +4,15 @@
 # install-pose-loras.sh never lands in image layers or build logs.
 
 FROM runpod/worker-comfyui:latest-base
-# Rebuild: 2026-05-11 — add 4 new dedicated scene LoRAs from civitai
+# Rebuild: 2026-05-16 — force-refresh the base image to pick up the
+# newest upstream ComfyUI shipped in runpod/worker-comfyui:latest-base.
+# Our previously-cached base was missing the `res_2s` sampler (added
+# to ComfyUI ~Sept 2024) which Juggernaut Z / Z-Image fine-tunes
+# require for their trained noise schedule. The CI workflow now sets
+# pull:true on docker/build-push-action so layer cache never reuses
+# the stale base — see .github/workflows/build.yml for context.
+#
+# Prior: 2026-05-11 — add 4 new dedicated scene LoRAs from civitai
 # (Multi-Girl Blowjobs, Spraying Cum, 5UCK1T, POV blowjob). These
 # replace DR34ML4Y for double_blowjob / missionary_cumshot / blowjob
 # poses that DR34ML4Y rendered with consistent failure modes (2 cocks,

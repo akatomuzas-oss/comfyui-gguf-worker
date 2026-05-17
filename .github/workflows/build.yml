@@ -32,6 +32,15 @@ jobs:
           context: .
           push: true
           platforms: linux/amd64
+          # 2026-05-16: force-pull the base image on every build so we
+          # always pick up the newest ComfyUI shipped in
+          # runpod/worker-comfyui:latest-base. Without this, Docker
+          # layer cache reuses the stale base and the worker's bundled
+          # ComfyUI lags by months (we hit this with the missing
+          # `res_2s` sampler — added to ComfyUI in late 2024 but our
+          # cached base predated that). pull:true costs ~30s extra per
+          # build but guarantees we're never running stale upstream.
+          pull: true
           tags: |
             ghcr.io/${{ github.repository }}:latest
             ghcr.io/${{ github.repository }}:${{ github.sha }}
