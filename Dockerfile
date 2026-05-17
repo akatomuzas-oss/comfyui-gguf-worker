@@ -3,9 +3,16 @@
 # (RUN --mount=type=secret). Required so the Civitai token used by
 # install-pose-loras.sh never lands in image layers or build logs.
 
-FROM runpod/worker-comfyui:5.8.5-z-image-turbo
-# Rebuild: 2026-05-16b — switched base from :latest-base to the
-# z-image-turbo variant. Why:
+FROM runpod/worker-comfyui:latest-base
+# Rebuild: 2026-05-17 — REVERTED from 5.8.5-z-image-turbo back to
+# :latest-base. The z-image-turbo variant did not boot on our worker
+# setup (stuck at "initializing" indefinitely). Going back to the
+# stable base + relying on RES4LYF (added below) to provide
+# ClownsharkSampler_Beta directly, which is a custom node and works
+# regardless of the base image's bundled ComfyUI version.
+#
+# Prior: 2026-05-16b — switched base from :latest-base to the
+# z-image-turbo variant (this caused the boot failure). Why we tried:
 #
 # 1. :latest-base on RunPod's Docker Hub is a months-old build whose
 #    bundled ComfyUI predates the `res_2s` sampler — required by
