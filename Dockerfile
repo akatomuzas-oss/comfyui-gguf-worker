@@ -3,14 +3,26 @@
 # (RUN --mount=type=secret). Required so the Civitai token used by
 # install-pose-loras.sh never lands in image layers or build logs.
 
-FROM runpod/worker-comfyui:latest-base
-# Rebuild: 2026-05-16 — force-refresh the base image to pick up the
-# newest upstream ComfyUI shipped in runpod/worker-comfyui:latest-base.
-# Our previously-cached base was missing the `res_2s` sampler (added
-# to ComfyUI ~Sept 2024) which Juggernaut Z / Z-Image fine-tunes
-# require for their trained noise schedule. The CI workflow now sets
-# pull:true on docker/build-push-action so layer cache never reuses
-# the stale base — see .github/workflows/build.yml for context.
+FROM runpod/worker-comfyui:5.8.5-z-image-turbo
+# Rebuild: 2026-05-16b — switched base from :latest-base to the
+# z-image-turbo variant. Why:
+#
+# 1. :latest-base on RunPod's Docker Hub is a months-old build whose
+#    bundled ComfyUI predates the `res_2s` sampler — required by
+#    Juggernaut Z / Z-Image fine-tunes for their trained noise
+#    schedule. Even pull:true couldn't help us; the upstream tag
+#    itself was stale.
+# 2. 5.8.5-z-image-turbo (rebuilt 2026-03-20) ships a current ComfyUI
+#    pinned to a version that supports Z-Image's full feature set
+#    out of the box, plus the UNETLoader / VAELoader / CLIPLoader
+#    nodes for the Qwen-text-encoder pipeline already wired in.
+# 3. Our /workspace/ComfyUI/extra_model_paths.yaml still drives model
+#    discovery — Juggernaut Z UNet, qwen_3_4b encoder, zimage_ae VAE,
+#    and all Pony LoRAs continue to resolve from the volume. Nothing
+#    in the model directory layout changes.
+#
+# The CI workflow keeps pull:true so any future rebuild picks up new
+# 5.8.x-z-image-turbo digests.
 #
 # Prior: 2026-05-11 — add 4 new dedicated scene LoRAs from civitai
 # (Multi-Girl Blowjobs, Spraying Cum, 5UCK1T, POV blowjob). These
